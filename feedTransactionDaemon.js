@@ -62,18 +62,18 @@ const feedTransactionHistory = async () => {
             if (pool.lpToken && pool.lpToken.id && pool.lpToken.decimals)
                 decimalObj[pool.lpToken.id] = Number(pool.lpToken.decimals)
         }
-    
-        let _data = await Transaction.find({}).sort({ timestamp: -1 }).limit(1)
-        if (_data === null || _data === undefined || _data.length === 0) {
-            lastTransactioTimestamp = startTime
-        } else {
-            lastTransactioTimestamp = _data[0].timestamp
-        }
     }
 
     if (now_date - feedStart > 3600) {
         await initialize ()
         feedStart = now_date
+    }
+
+    let _data = await Transaction.find({}).sort({ timestamp: -1 }).limit(1)
+    if (_data === null || _data === undefined || _data.length === 0) {
+        lastTransactioTimestamp = startTime
+    } else {
+        lastTransactioTimestamp = _data[0].timestamp
     }
 
     const getSwapData = async () => {
