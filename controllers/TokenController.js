@@ -43,10 +43,10 @@ module.exports.getDailyVolumes = async () => {
 
 module.exports.getPriceChanges = async () => {
     try {
-        const pc = await PriceChange.find({});
+        const pc = await Token.find({}, {id:1, dailyPriceChange: 1});
         let data = {}
         for (let c of pc) {
-            data[c['tokenId']] = c['value'] ? c['value'] : 0
+            data[c['id']] = c['dailyPriceChange'] ? c['dailyPriceChange'] : 0
         }
         return data;
     } catch (e) {
