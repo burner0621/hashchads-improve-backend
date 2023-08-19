@@ -27,6 +27,18 @@ router.get("/simple_all", async (req, res) => {
     }
 });
 
+router.get("/get_token_by_address", async (req, res) => {
+    try {
+        let data = await tokensController.getTokenByAddress(req.query);
+        res.send (
+            data
+        );
+    } catch (err) {
+        console.log(err);
+        res.send ([]);
+    }
+});
+
 router.get("/get_daily_volumes", async (req, res) => {
     try {
         let data = await tokensController.getDailyVolumes();
@@ -78,9 +90,39 @@ router.get("/get_top_tokens", async (req, res) => {
     }
 });
 
+router.get("/get_new_tokens", async (req, res) => {
+    try {
+        let data = await tokensController.getNewTokenData(req.query);
+        res.send (
+            data
+        );
+    } catch (err) {
+        console.log(err);
+        res.send ({
+            success: false,
+            data: []
+        });
+    }
+});
+
 router.get("/get_tokens_stats_data", async (req, res) => {
     try {
         let data = await tokensController.getTokensStatsData(req.query);
+        res.send (
+            data
+        );
+    } catch (err) {
+        console.log(err);
+        res.send ({
+            success: false,
+            data: {}
+        });
+    }
+});
+
+router.get("/get_top_stats_data", async (req, res) => {
+    try {
+        let data = await tokensController.getTopStatsData(req.query);
         res.send (
             data
         );

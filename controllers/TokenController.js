@@ -26,6 +26,16 @@ module.exports.getSimpleAll = async () => {
     }
 }
 
+module.exports.getTokenByAddress = async ({address}) => {
+    try {
+        const token = await Token.findOne({id: address});
+        return token;
+    } catch (e) {
+        console.log(e)
+        return []
+    }
+}
+
 module.exports.getDailyVolumes = async () => {
     try {
         const proxy = utils.getProxy()
@@ -55,6 +65,38 @@ module.exports.getPriceChanges = async () => {
     }
 }
 
+module.exports.getNewTokenData = async ({count}) => {
+    let tokens = await Token.find({}, {monthlyPrice: 0});
+    tokens = tokens &&
+            tokens
+                .sort((a, b) => {
+                    return a['timestampSecondsLastListingChange'] > b['timestampSecondsLastListingChange'] ? -1 : 1
+                })
+    tokens = tokens.slice (0, count)
+    let tmpTokens = []
+    for (let token of tokens) {
+        let tmp = {}
+        tmp.id = token.id
+        tmp.price = Number(token.priceUsd).toFixed(6) || 0.0
+        tmp.img = `https://saucerswap.finance${token.icon}`
+        tmp.iconPath = token.icon
+        tmp.change = Number(token.dailyPriceChange).toFixed(6)
+        tmp.coinName = token.name
+        if (Number(token.dailyPriceChange) > 0) {
+            tmp.iconClass = "success"
+            tmp.icon = "mdi mdi-trending-up"
+        } else {
+            tmp.iconClass = "danger"
+            tmp.icon = "mdi mdi-trending-down"
+        }
+        tmpTokens.push(tmp)
+    }
+    return {
+        success: true,
+        data: tmpTokens
+    }
+}
+
 module.exports.getTopTokenData = async () => {
     const hbarPrices = await utils.getHbarPrices()
     let currentHbarPrice = 0
@@ -78,7 +120,7 @@ module.exports.getTopTokenData = async () => {
         }
         return 0;
     });
-    gainers = gainers.slice(0, 6)
+    gainers = gainers.slice(0, 25)
 
     losers = losers.sort((a, b) => {
         if (Number(a.dailyPriceChange) < Number(b.dailyPriceChange)) {
@@ -88,7 +130,7 @@ module.exports.getTopTokenData = async () => {
         }
         return 0;
     });
-    losers = losers.slice(0, 6)
+    losers = losers.slice(0, 25)
 
     let tmpGainers = [], tmpLosers = []
     for (let token of gainers) {
@@ -135,7 +177,7 @@ module.exports.getTopTokenData = async () => {
     }
 }
 
-module.exports.getTokensStatsData = async ({ sortedColumn, sortDirection, pageNum, pageCount }) => {
+module.exports.getTokensStatsData = async ({ sortedColumn, sortDirection, pageNum, pageCount, type, liq }) => {
     try {
         const tokens = await Token.find({});
         let tmpTokens = []
@@ -170,6 +212,29 @@ module.exports.getTokensStatsData = async ({ sortedColumn, sortDirection, pageNu
             }
             tmpTokens.push(tmpToken)
         }
+        
+        if (liq === '1')
+            tmpTokens = tmpTokens && tmpTokens
+                .filter(item => {
+                    if (parseFloat (item['liquidity']) >= 500) return 1;
+                })
+        else if (liq === '0')
+            tmpTokens = tmpTokens && tmpTokens
+                .filter(item => {
+                    if (parseFloat (item['liquidity']) < 500) return 1;
+                })
+        
+        if (type === 'gainer')
+            tmpTokens = tmpTokens && tmpTokens
+                .filter(item => {
+                    if (parseFloat (item['dailyPriceChange']) >= 0) return 1;
+                })
+        else if (liq === '0')
+            tmpTokens = tmpTokens && tmpTokens
+                .filter(item => {
+                    if (parseFloat (item['dailyPriceChange']) < 0) return 1;
+                })
+
         const rlt = tmpTokens && tmpTokens
             .sort((a, b) => {
                 if (sortedColumn === "symbol" || sortedColumn === "name") {
@@ -191,6 +256,111 @@ module.exports.getTokensStatsData = async ({ sortedColumn, sortDirection, pageNu
         return {
             success: true,
             data: rlt
+        }
+    } catch (e) {
+        console.log(e)
+        return {success: false}
+    }
+}
+
+
+module.exports.getTopStatsData = async ({ count }) => {
+    try {
+        const tokens = await Token.find({});
+        let tmpTokens = [], gainers = [], losers = [], newers = []
+        for (let token of tokens) {
+            let tmpToken = token.toObject({ getters: true });
+            delete tmpToken['monthlyPrice']
+            if (token.monthlyPrice) {
+                let tmpPriceChart = ""
+                let closeUsdList = []
+                let i = 0
+                if (token.monthlyPrice[token.monthlyPrice.length - 7]) tmpToken['weeklyChanged'] = utils.getPercentChange(token['priceUsd'], token.monthlyPrice[token.monthlyPrice.length - 7]['closeUsd'])
+                if (token.monthlyPrice[1]) tmpToken['monthlyChanged'] = utils.getPercentChange(token['priceUsd'], token.monthlyPrice[1]['closeUsd'])
+                for (let p of token.monthlyPrice) {
+                    closeUsdList.push(parseFloat(p['closeUsd']))
+                }
+                const min = Math.min(...closeUsdList);
+                const max = Math.max(...closeUsdList);
+                let normalised_prices = [];
+
+                for (let p of closeUsdList) {
+                    let new_price = (parseFloat(p) - min) / (min - max);
+                    if (isNaN(new_price)) {
+                        new_price = 0;
+                    }
+                    normalised_prices.push(Math.abs((Math.abs(new_price * 80)) - 80));
+                }
+                for (let p of normalised_prices) {
+                    tmpPriceChart += i.toString() + "," + p + " "
+                    i += 15;
+                }
+                tmpToken['priceChart'] = tmpPriceChart
+            }
+            tmpTokens.push(tmpToken)
+        }
+
+        gainers = tmpTokens && tmpTokens
+            .filter(item => {
+                if (parseFloat (item['dailyPriceChange']) >= 0) return 1;
+            })
+        losers = tmpTokens && tmpTokens
+            .filter(item => {
+                if (parseFloat (item['dailyPriceChange']) < 0) return 1;
+            })
+        newers = tmpTokens &&
+                tmpTokens
+                .sort((a, b) => {
+                    return a['timestampSecondsLastListingChange'] > b['timestampSecondsLastListingChange'] ? -1 : 1
+                })
+                .slice(0, count)
+        const rlt = tmpTokens && tmpTokens
+            .sort((a, b) => {
+                if (isNaN(parseFloat(a['dailyVolume'])) === false && isNaN(parseFloat(b['dailyVolume'])) === false)
+                    return parseFloat(a['dailyVolume']) > parseFloat(b['dailyVolume']) ? -1 : 1
+                else if (isNaN(parseFloat(a['dailyVolume'])) && isNaN(parseFloat(b['dailyVolume'])) === false)
+                    return 1
+                else if (isNaN(parseFloat(a['dailyVolume'])) === false && isNaN(parseFloat(b['dailyVolume'])))
+                    return -1
+                else
+                    return 0
+            })
+            .slice(0, count)
+        
+        gainers = gainers && gainers
+            .sort((a, b) => {
+                if (isNaN(parseFloat(a['dailyVolume'])) === false && isNaN(parseFloat(b['dailyVolume'])) === false)
+                    return parseFloat(a['dailyVolume']) > parseFloat(b['dailyVolume']) ? -1 : 1
+                else if (isNaN(parseFloat(a['dailyVolume'])) && isNaN(parseFloat(b['dailyVolume'])) === false)
+                    return 1
+                else if (isNaN(parseFloat(a['dailyVolume'])) === false && isNaN(parseFloat(b['dailyVolume'])))
+                    return -1
+                else
+                    return 0
+            })
+            .slice(0, count)
+        
+        losers = losers && losers
+            .sort((a, b) => {
+                if (isNaN(parseFloat(a['dailyVolume'])) === false && isNaN(parseFloat(b['dailyVolume'])) === false)
+                    return parseFloat(a['dailyVolume']) > parseFloat(b['dailyVolume']) ? -1 : 1
+                else if (isNaN(parseFloat(a['dailyVolume'])) && isNaN(parseFloat(b['dailyVolume'])) === false)
+                    return 1
+                else if (isNaN(parseFloat(a['dailyVolume'])) === false && isNaN(parseFloat(b['dailyVolume'])))
+                    return -1
+                else
+                    return 0
+            })
+            .slice(0, count)
+        
+        return {
+            success: true,
+            data: {
+                tops: rlt,
+                gainers: gainers,
+                losers: losers,
+                newers: newers
+            }
         }
     } catch (e) {
         console.log(e)
@@ -279,11 +449,11 @@ module.exports.getTransactionHistory = async ({ tokenId, pageNum, pageSize }) =>
 module.exports.getStatistics = async ({ tokenId, timeRangeType }) => {
     let timeStart = 0;
     let nowDate = Date.now() / 1000;
-    if (timeRangeType === 'five') timeStart = nowDate - 300;
-    else if (timeRangeType === 'hour') timeStart = nowDate - 3600;
-    else if (timeRangeType === 'six') timeStart = nowDate - 3600 * 6;
-    else if (timeRangeType === 'day') timeStart = nowDate - 86400;
-    else if (timeRangeType === 'week') timeStart = nowDate - 86400 * 7;
+    if (timeRangeType === '5m') timeStart = nowDate - 300;
+    else if (timeRangeType === '1h') timeStart = nowDate - 3600;
+    else if (timeRangeType === '6h') timeStart = nowDate - 3600 * 6;
+    else if (timeRangeType === '1d') timeStart = nowDate - 86400;
+    else if (timeRangeType === '1w') timeStart = nowDate - 86400 * 7;
     try {
         let txs = await Transaction.find({ tokenId: tokenId, timestamp: { $gte: timeStart } }).count();
         let buys = await Transaction.find({ tokenId: tokenId, state: 'buy', timestamp: { $gte: timeStart } }).count();
