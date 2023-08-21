@@ -82,6 +82,7 @@ module.exports.getNewTokenData = async ({count}) => {
         tmp.iconPath = token.icon
         tmp.change = Number(token.dailyPriceChange).toFixed(6)
         tmp.coinName = token.name
+        tmp.dailyVolume = token.dailyVolume
         if (Number(token.dailyPriceChange) > 0) {
             tmp.iconClass = "success"
             tmp.icon = "mdi mdi-trending-up"
@@ -141,6 +142,7 @@ module.exports.getTopTokenData = async () => {
         tmp.iconPath = token.icon
         tmp.change = Number(token.dailyPriceChange).toFixed(6)
         tmp.coinName = token.name
+        tmp.dailyVolume = token.dailyVolume
         if (Number(token.dailyPriceChange) > 0) {
             tmp.iconClass = "success"
             tmp.icon = "mdi mdi-trending-up"
@@ -159,6 +161,7 @@ module.exports.getTopTokenData = async () => {
         tmp.iconPath = token.icon
         tmp.change = Number(token.dailyPriceChange).toFixed(6)
         tmp.coinName = token.name
+        tmp.dailyVolume = token.dailyVolume
         if (Number(token.dailyPriceChange) > 0) {
             tmp.iconClass = "success"
             tmp.icon = "mdi mdi-trending-up"
@@ -352,11 +355,15 @@ module.exports.getTopStatsData = async ({ count }) => {
                     return 0
             })
             .slice(0, count)
+        let tops = await setMarketcap (rlt);
+        newers = await setMarketcap (newers);
+        gainers = await setMarketcap (gainers);
+        losers = await setMarketcap (losers);
         
         return {
             success: true,
             data: {
-                tops: rlt,
+                tops: tops,
                 gainers: gainers,
                 losers: losers,
                 newers: newers
@@ -368,6 +375,25 @@ module.exports.getTopStatsData = async ({ count }) => {
     }
 }
 
+async function setMarketcap(_tokens) {
+    let tmpTokens = []
+    for (let item of _tokens) {
+        let tmp = item;
+        let response = await fetch(config.MIRROR_NODE_URL + "/api/v1/tokens/" + item.id);
+        if (response.status === 200) {
+            let jsonData = await response.json()
+            let response1 = await fetch(config.MIRROR_NODE_URL + `/api/v1/tokens/${item.id}/balances?account.id=${jsonData?.treasury_account_id}`);
+            if (response1.status === 200) {
+                let jsonData1 = await response1.json()
+                let balances = jsonData1?.balances
+                let p = (Number(jsonData?.total_supply) - Number(balances[0]['balance'])) / Math.pow(10, Number(jsonData?.decimals)) * item.priceUsd
+                tmp['marketcap'] = p
+            }
+        }
+        tmpTokens.push (tmp)
+    }
+    return tmpTokens;
+}
 module.exports.getHbarPrice = async () => {
     const hbarPrices = await utils.getHbarPrices()
     if (hbarPrices.length > 0) {
