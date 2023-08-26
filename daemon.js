@@ -176,11 +176,11 @@ const saveMonthlyPriceData = async () => {
             const proxyNum = Math.floor(Math.random() * dProxyList.length);
             const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
             let res = await fetch(`https://api.saucerswap.finance/tokens/prices/${token.id}?interval=DAY&from=${start_date}&to=${now_date}`, { agent: proxy })
-            console.log ("saveMonthlyPriceData >>> ", token.id, " ... status=", res.status)
+            console.log("saveMonthlyPriceData >>> ", token.id, " ... status=", res.status)
             if (res.status === 200) {
                 const dailyPrice = await res.json()
                 const _t = await Token.findOne({ id: token.id });
-                console.log (token.id, dailyPrice.length)
+                console.log(token.id, dailyPrice.length)
                 if (_t) {
                     await Token.findOneAndUpdate(
                         { id: token.id },
@@ -196,17 +196,42 @@ const saveMonthlyPriceData = async () => {
                     await _newToken.save()
                 }
             }
-            sleep (3)
+            sleep(3)
         }
-        sleep (60)
+        sleep(60)
     }
+}
+
+const saveMarketCapData = async () => {
+    if (tokens.length === 0) tokens = await Token.find({})
+    for (let item of tokens) {
+        let tmp = item;
+        let response = await fetch(config.MIRROR_NODE_URL + "/api/v1/tokens/" + item.id);
+        console.log ("saveMarketCapData >>> ", item['id'], " ... status = ", response.status)
+        if (response.status === 200) {
+            let jsonData = await response.json()
+            let response1 = await fetch(config.MIRROR_NODE_URL + `/api/v1/tokens/${item.id}/balances?account.id=${jsonData?.treasury_account_id}`);
+            if (response1.status === 200) {
+                let jsonData1 = await response1.json()
+                let balances = jsonData1?.balances
+                let p = (Number(jsonData?.total_supply) - Number(balances[0]['balance'])) / Math.pow(10, Number(jsonData?.decimals)) * item.priceUsd
+                await Token.findOneAndUpdate(
+                    { id: item['id'] },
+                    {
+                        marketcap: p,
+                    }
+                );
+            }
+        }
+    }
+    return tmpTokens;
 }
 
 async function main() {
     dbConnect()
     dProxyList = await utils.readCSVData("proxylist/" + config.proxyListFile)
-    saveMonthlyPriceData ()
-    mainSaveData ()
+    saveMonthlyPriceData()
+    mainSaveData()
 }
 
 async function mainSaveData() {
@@ -215,8 +240,9 @@ async function mainSaveData() {
         if (period % TOKEN_INTERVAL === 0) await saveTokens()
         if (period % POOL_INTERVAL === 0) await savePools()
         if (period % DAILY_VOLUME_INTERVAL === 0) await saveDailyVolumes()
+        if (period % POOL_INTERVAL === 0) await saveMarketCapData()
         await savePriceChanges()
-        await saveLiquidity ()
+        await saveLiquidity()
         sleep(PRICE_INTERVAL)
         period += PRICE_INTERVAL
     }

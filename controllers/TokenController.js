@@ -355,15 +355,15 @@ module.exports.getTopStatsData = async ({ count }) => {
                     return 0
             })
             .slice(0, count)
-        let tops = await setMarketcap (rlt);
-        newers = await setMarketcap (newers);
-        gainers = await setMarketcap (gainers);
-        losers = await setMarketcap (losers);
+        // let tops = await setMarketcap (rlt);
+        // newers = await setMarketcap (newers);
+        // gainers = await setMarketcap (gainers);
+        // losers = await setMarketcap (losers);
         
         return {
             success: true,
             data: {
-                tops: tops,
+                tops: rlt,
                 gainers: gainers,
                 losers: losers,
                 newers: newers

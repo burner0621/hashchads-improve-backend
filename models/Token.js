@@ -19,6 +19,7 @@ const TokenSchema = new mongoose.Schema({
   dailyVolume: {type: String, default: ''},
   liquidity: {type: String, default: ''},
   monthlyPrice: {type: Object, default: ''},
+  marketcap: {type: Object, default: ''},
 }, { timestamps: true });
 
 module.exports = Token = mongoose.model('Token', TokenSchema);
