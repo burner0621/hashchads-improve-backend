@@ -423,6 +423,21 @@ module.exports.getTokenPrices = async ({address, interval, from, to}) => {
     }
 }
 
+module.exports.getTokenLatestPrices = async ({address, interval}) => {
+    try {
+        const proxy = utils.getProxy()
+        let response = await fetch(`${config.apiURL}/tokens/prices/latest/${address}?interval=${interval}`, { agent: proxy })
+        if (response.status === 200) {
+            let jsonData = await response.json();
+            return jsonData
+        }
+        return {};
+    } catch (e) {
+        console.log(e)
+        return {}
+    }
+}
+
 module.exports.getTokenPricesDH = async ({address, from, to}) => {
     try {
         const proxy = utils.getProxy()

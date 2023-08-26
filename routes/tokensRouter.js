@@ -164,6 +164,20 @@ router.get("/get_token_prices", async (req, res) => {
     }
 });
 
+router.get("/get_token_latest_prices", async (req, res) => {
+    try {
+        let data = await tokensController.getTokenLatestPrices(req.query);
+        res.send (
+            data
+        );
+    } catch (err) {
+        console.log(err);
+        res.send ({
+            success: false,
+        });
+    }
+});
+
 router.get("/get_token_prices_dh", async (req, res) => {
     try {
         let data = await tokensController.getTokenPricesDH(req.query);
