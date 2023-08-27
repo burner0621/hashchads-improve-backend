@@ -170,9 +170,9 @@ const saveMonthlyPriceData = async () => {
     const now_date = new Date() / 1000
     const start_date = now_date - 86400 * 31
     while (1) {
-        tokens = await Token.find({})
+        let tmpTokens = await Token.find({})
 
-        for (let token of tokens) {
+        for (let token of tmpTokens) {
             const proxyNum = Math.floor(Math.random() * dProxyList.length);
             const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
             let res = await fetch(`https://api.saucerswap.finance/tokens/prices/${token.id}?interval=DAY&from=${start_date}&to=${now_date}`, { agent: proxy })
@@ -205,9 +205,8 @@ const saveMonthlyPriceData = async () => {
 const saveMarketCapData = async () => {
     if (tokens.length === 0) tokens = await Token.find({})
     for (let item of tokens) {
-        let tmp = item;
         let response = await fetch(config.MIRROR_NODE_URL + "/api/v1/tokens/" + item.id);
-        console.log ("saveMarketCapData >>> ", item['id'], " ... status = ", response.status)
+        console.log("saveMarketCapData >>> ", item['id'], " ... status = ", response.status)
         if (response.status === 200) {
             let jsonData = await response.json()
             let response1 = await fetch(config.MIRROR_NODE_URL + `/api/v1/tokens/${item.id}/balances?account.id=${jsonData?.treasury_account_id}`);
@@ -224,13 +223,37 @@ const saveMarketCapData = async () => {
             }
         }
     }
-    return tmpTokens;
+}
+
+
+const saveToeknLatestPrices = async () => {
+    while (1) {
+        let tmpTokens = await Token.find({})
+        for (let item of tmpTokens) {
+            const proxyNum = Math.floor(Math.random() * dProxyList.length);
+            const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
+            let response = await fetch(`${config.apiURL}/tokens/prices/latest/${item.id}?interval=DAY`, { agent: proxy });
+            console.log("saveToeknLatestPrices >>> ", item['id'], " ... status = ", response.status)
+            if (response.status === 200) {
+                let jsonData = await response.json()
+                await Token.findOneAndUpdate(
+                    { id: item['id'] },
+                    {
+                        priceUsd: jsonData.closeUsd,
+                    }
+                );
+            }
+            sleep (3)
+        }
+        sleep (10)
+    }
 }
 
 async function main() {
     dbConnect()
     dProxyList = await utils.readCSVData("proxylist/" + config.proxyListFile)
     saveMonthlyPriceData()
+    saveToeknLatestPrices ()
     mainSaveData()
 }
 
