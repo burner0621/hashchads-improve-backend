@@ -121,6 +121,7 @@ module.exports.getTopTokenData = async () => {
         }
         return 0;
     });
+    gainers = gainers.filter ((item) => item.liquidity > 500)
     gainers = gainers.slice(0, 25)
 
     losers = losers.sort((a, b) => {
@@ -131,6 +132,7 @@ module.exports.getTopTokenData = async () => {
         }
         return 0;
     });
+    losers = losers.filter ((item) => item.liquidity > 500)
     losers = losers.slice(0, 25)
 
     let tmpGainers = [], tmpLosers = []
