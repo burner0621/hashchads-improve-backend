@@ -41,23 +41,27 @@ const sleep = (delay) => {
 const saveTokens = async () => {
     const proxyNum = Math.floor(Math.random() * dProxyList.length);
     const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
-    let response = await fetch(`${config.apiURL}/tokens`, { agent: proxy })
-    if (response.status === 200) {
-        const jsonData = await response.json();
-        tokens = jsonData
-        console.log("================== Save Tokens Start ==================", jsonData.length)
-        for (t of jsonData) {
-            const _t = await Token.findOne({ id: t['id'] });
-            if (_t) {
-                await Token.findOneAndUpdate(
-                    {id: t['id'] },
-                    t
-                )
-                continue
+    try {
+        let response = await fetch(`${config.apiURL}/tokens`, { agent: proxy })
+        if (response.status === 200) {
+            const jsonData = await response.json();
+            tokens = jsonData
+            console.log("================== Save Tokens Start ==================", jsonData.length)
+            for (t of jsonData) {
+                const _t = await Token.findOne({ id: t['id'] });
+                if (_t) {
+                    await Token.findOneAndUpdate(
+                        { id: t['id'] },
+                        t
+                    )
+                    continue
+                }
+                _newToken = new Token(t);
+                await _newToken.save()
             }
-            _newToken = new Token(t);
-            await _newToken.save()
         }
+    } catch (e) {
+        console.log(e)
     }
     console.log("++++++++++++++++++++ Save Tokens End ++++++++++++++++++++")
 }
@@ -65,23 +69,27 @@ const saveTokens = async () => {
 const savePools = async () => {
     const proxyNum = Math.floor(Math.random() * dProxyList.length);
     const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
-    let response = await fetch(`${config.apiURL}/pools`, { agent: proxy })
-    if (response.status === 200) {
-        const jsonData = await response.json();
-        pools = jsonData
-        console.log("================== Save Pools Start ==================", jsonData.length)
-        for (p of jsonData) {
-            const _p = await Pool.findOne({ contractId: p['contractId'] });
-            if (_p) {
-                await Pool.findOneAndUpdate(
-                    { contractId: p['contractId'] },
-                    p
-                )
-                continue
+    try {
+        let response = await fetch(`${config.apiURL}/pools`, { agent: proxy })
+        if (response.status === 200) {
+            const jsonData = await response.json();
+            pools = jsonData
+            console.log("================== Save Pools Start ==================", jsonData.length)
+            for (p of jsonData) {
+                const _p = await Pool.findOne({ contractId: p['contractId'] });
+                if (_p) {
+                    await Pool.findOneAndUpdate(
+                        { contractId: p['contractId'] },
+                        p
+                    )
+                    continue
+                }
+                _newPool = new Pool(p);
+                await _newPool.save()
             }
-            _newPool = new Pool(p);
-            await _newPool.save()
         }
+    } catch (e) {
+        console.log(e)
     }
     console.log("++++++++++++++++++++ Save Pools End ++++++++++++++++++++")
 }
@@ -89,27 +97,31 @@ const savePools = async () => {
 const savePriceChanges = async () => {
     const proxyNum = Math.floor(Math.random() * dProxyList.length);
     const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
-    let response = await fetch(`${config.apiURL}/tokens/price-change`, { agent: proxy })
-    if (response.status === 200) {
-        const jsonData = await response.json();
-        console.log("================== Save PriceChange Start ==================", Object.keys(jsonData).length)
-        for (key of Object.keys(jsonData)) {
-            const _t = await Token.findOne({ id: key });
-            if (_t) {
-                await Token.findOneAndUpdate(
-                    { id: key },
-                    {
-                        dailyPriceChange: jsonData[key],
-                    }
-                );
-            } else {
-                _newToken = new Token({
-                    id: key,
-                    dailyPriceChange: jsonData[key]
-                });
-                await _newToken.save()
+    try {
+        let response = await fetch(`${config.apiURL}/tokens/price-change`, { agent: proxy })
+        if (response.status === 200) {
+            const jsonData = await response.json();
+            console.log("================== Save PriceChange Start ==================", Object.keys(jsonData).length)
+            for (key of Object.keys(jsonData)) {
+                const _t = await Token.findOne({ id: key });
+                if (_t) {
+                    await Token.findOneAndUpdate(
+                        { id: key },
+                        {
+                            dailyPriceChange: jsonData[key],
+                        }
+                    );
+                } else {
+                    _newToken = new Token({
+                        id: key,
+                        dailyPriceChange: jsonData[key]
+                    });
+                    await _newToken.save()
+                }
             }
         }
+    } catch (e) {
+        console.log(e)
     }
     console.log("++++++++++++++++++++ Save PriceChange End ++++++++++++++++++++")
 }
@@ -117,32 +129,37 @@ const savePriceChanges = async () => {
 const saveDailyVolumes = async () => {
     const proxyNum = Math.floor(Math.random() * dProxyList.length);
     const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
-    let response = await fetch(`${config.apiURL}/tokens/daily-volumes`, { agent: proxy })
-    if (response.status === 200) {
-        const jsonData = await response.json();
-        console.log("================== Save DailyVolumes Start ==================", Object.keys(jsonData).length)
-        for (key of Object.keys(jsonData)) {
-            const _t = await Token.findOne({ id: key });
-            if (_t) {
-                await Token.findOneAndUpdate(
-                    { id: key },
-                    {
-                        dailyVolume: jsonData[key],
-                    }
-                );
-            } else {
-                _newToken = new Token({
-                    id: key,
-                    dailyVolume: jsonData[key]
-                });
-                await _newToken.save()
+    try {
+        let response = await fetch(`${config.apiURL}/tokens/daily-volumes`, { agent: proxy })
+        if (response.status === 200) {
+            const jsonData = await response.json();
+            console.log("================== Save DailyVolumes Start ==================", Object.keys(jsonData).length)
+            for (key of Object.keys(jsonData)) {
+                const _t = await Token.findOne({ id: key });
+                if (_t) {
+                    await Token.findOneAndUpdate(
+                        { id: key },
+                        {
+                            dailyVolume: jsonData[key],
+                        }
+                    );
+                } else {
+                    _newToken = new Token({
+                        id: key,
+                        dailyVolume: jsonData[key]
+                    });
+                    await _newToken.save()
+                }
             }
         }
+    } catch (e) {
+        console.log(e)
     }
     console.log("++++++++++++++++++++ Save DailyVolumes End ++++++++++++++++++++")
 }
 
 const saveLiquidity = async () => {
+    pools = await Pool.find({})
     if (pools.length === 0) return
     let _tokenData = {}
     for (let pool of pools) {
@@ -187,26 +204,30 @@ const saveMonthlyPriceData = async () => {
         for (let token of tmpTokens) {
             const proxyNum = Math.floor(Math.random() * dProxyList.length);
             const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
-            let res = await fetch(`https://api.saucerswap.finance/tokens/prices/${token.id}?interval=DAY&from=${start_date}&to=${now_date}`, { agent: proxy })
-            console.log("saveMonthlyPriceData >>> ", token.id, " ... status=", res.status)
-            if (res.status === 200) {
-                const dailyPrice = await res.json()
-                const _t = await Token.findOne({ id: token.id });
-                console.log(token.id, dailyPrice.length)
-                if (_t) {
-                    await Token.findOneAndUpdate(
-                        { id: token.id },
-                        {
-                            monthlyPrice: dailyPrice,
-                        }
-                    );
-                } else {
-                    _newToken = new Token({
-                        id: token.id,
-                        monthlyPrice: dailyPrice
-                    });
-                    await _newToken.save()
+            try {
+                let res = await fetch(`https://api.saucerswap.finance/tokens/prices/${token.id}?interval=DAY&from=${start_date}&to=${now_date}`, { agent: proxy })
+                console.log("saveMonthlyPriceData >>> ", token.id, " ... status=", res.status)
+                if (res.status === 200) {
+                    const dailyPrice = await res.json()
+                    const _t = await Token.findOne({ id: token.id });
+                    console.log(token.id, dailyPrice.length)
+                    if (_t) {
+                        await Token.findOneAndUpdate(
+                            { id: token.id },
+                            {
+                                monthlyPrice: dailyPrice,
+                            }
+                        );
+                    } else {
+                        _newToken = new Token({
+                            id: token.id,
+                            monthlyPrice: dailyPrice
+                        });
+                        await _newToken.save()
+                    }
                 }
+            } catch (e) {
+                console.log(e)
             }
             sleep(3)
         }
@@ -215,25 +236,37 @@ const saveMonthlyPriceData = async () => {
 }
 
 const saveMarketCapData = async () => {
-    if (tokens.length === 0) tokens = await Token.find({})
-    for (let item of tokens) {
-        let response = await fetch(config.MIRROR_NODE_URL + "/api/v1/tokens/" + item.id);
-        console.log("saveMarketCapData >>> ", item['id'], " ... status = ", response.status)
-        if (response.status === 200) {
-            let jsonData = await response.json()
-            let response1 = await fetch(config.MIRROR_NODE_URL + `/api/v1/tokens/${item.id}/balances?account.id=${jsonData?.treasury_account_id}`);
-            if (response1.status === 200) {
-                let jsonData1 = await response1.json()
-                let balances = jsonData1?.balances
-                let p = (Number(jsonData?.total_supply) - Number(balances[0]['balance'])) / Math.pow(10, Number(jsonData?.decimals)) * item.priceUsd
-                await Token.findOneAndUpdate(
-                    { id: item['id'] },
-                    {
-                        marketcap: p,
+    let period = 0
+    while (1) {
+        let tmpTokens = await Token.find({})
+        for (let item of tmpTokens) {
+            try {
+                let response = await fetch(config.MIRROR_NODE_URL + "/api/v1/tokens/" + item.id);
+                console.log("saveMarketCapData >>> ", item['id'], " ... status = ", response.status)
+                if (response.status === 200) {
+                    let jsonData = await response.json()
+                    try {
+                        let response1 = await fetch(config.MIRROR_NODE_URL + `/api/v1/tokens/${item.id}/balances?account.id=${jsonData?.treasury_account_id}`);
+                        if (response1.status === 200) {
+                            let jsonData1 = await response1.json()
+                            let balances = jsonData1?.balances
+                            let p = (Number(jsonData?.total_supply) - Number(balances[0]['balance'])) / Math.pow(10, Number(jsonData?.decimals)) * item.priceUsd
+                            await Token.findOneAndUpdate(
+                                { id: item['id'] },
+                                {
+                                    marketcap: p,
+                                }
+                            );
+                        }
+                    } catch (e) {
+                        console.log(e)
                     }
-                );
+                }
+            } catch (e) {
+                console.log(e)
             }
         }
+        sleep(POOL_INTERVAL)
     }
 }
 
@@ -244,20 +277,24 @@ const saveToeknLatestPrices = async () => {
         for (let item of tmpTokens) {
             const proxyNum = Math.floor(Math.random() * dProxyList.length);
             const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
-            let response = await fetch(`${config.apiURL}/tokens/prices/latest/${item.id}?interval=DAY`, { agent: proxy });
-            console.log("saveToeknLatestPrices >>> ", item['id'], " ... status = ", response.status)
-            if (response.status === 200) {
-                let jsonData = await response.json()
-                await Token.findOneAndUpdate(
-                    { id: item['id'] },
-                    {
-                        priceUsd: jsonData.closeUsd,
-                    }
-                );
+            try {
+                let response = await fetch(`${config.apiURL}/tokens/prices/latest/${item.id}?interval=DAY`, { agent: proxy });
+                console.log("saveToeknLatestPrices >>> ", item['id'], " ... status = ", response.status)
+                if (response.status === 200) {
+                    let jsonData = await response.json()
+                    await Token.findOneAndUpdate(
+                        { id: item['id'] },
+                        {
+                            priceUsd: jsonData.closeUsd,
+                        }
+                    );
+                }
+            } catch (e) {
+                console.log(e)
             }
-            sleep (3)
+            sleep(3)
         }
-        sleep (10)
+        sleep(10)
     }
 }
 
@@ -265,7 +302,8 @@ async function main() {
     dbConnect()
     dProxyList = await utils.readCSVData("proxylist/" + config.proxyListFile)
     saveMonthlyPriceData()
-    saveToeknLatestPrices ()
+    saveToeknLatestPrices()
+    saveMarketCapData()
     mainSaveData()
 }
 
@@ -275,7 +313,7 @@ async function mainSaveData() {
         if (period % TOKEN_INTERVAL === 0) await saveTokens()
         if (period % POOL_INTERVAL === 0) await savePools()
         if (period % DAILY_VOLUME_INTERVAL === 0) await saveDailyVolumes()
-        if (period % POOL_INTERVAL === 0) await saveMarketCapData()
+        // if (period % POOL_INTERVAL === 0) await saveMarketCapData()
         await savePriceChanges()
         await saveLiquidity()
         sleep(PRICE_INTERVAL)
