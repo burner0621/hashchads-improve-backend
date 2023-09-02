@@ -11,7 +11,7 @@ const utils = require('./utils')
 
 let dProxyList = {}
 let PRICE_INTERVAL = 10 // (seconds)
-let TOKEN_INTERVAL = 900
+let TOKEN_INTERVAL = 10
 let POOL_INTERVAL = 900
 let DAILY_VOLUME_INTERVAL = 43200
 
@@ -48,7 +48,13 @@ const saveTokens = async () => {
         console.log("================== Save Tokens Start ==================", jsonData.length)
         for (t of jsonData) {
             const _t = await Token.findOne({ id: t['id'] });
-            if (_t) continue
+            if (_t) {
+                await Token.findOneAndUpdate(
+                    {id: t['id'] },
+                    t
+                )
+                continue
+            }
             _newToken = new Token(t);
             await _newToken.save()
         }
@@ -66,7 +72,13 @@ const savePools = async () => {
         console.log("================== Save Pools Start ==================", jsonData.length)
         for (p of jsonData) {
             const _p = await Pool.findOne({ contractId: p['contractId'] });
-            if (_p) continue
+            if (_p) {
+                await Pool.findOneAndUpdate(
+                    { contractId: p['contractId'] },
+                    p
+                )
+                continue
+            }
             _newPool = new Pool(p);
             await _newPool.save()
         }

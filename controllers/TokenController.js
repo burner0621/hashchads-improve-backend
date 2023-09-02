@@ -243,16 +243,16 @@ module.exports.getTokensStatsData = async ({ sortedColumn, sortDirection, pageNu
         const rlt = tmpTokens && tmpTokens
             .sort((a, b) => {
                 if (sortedColumn === "symbol" || sortedColumn === "name") {
-                    return parseFloat(a[sortedColumn]) > parseFloat(b[sortedColumn]) ? (sortDirection ? -1 : 1) * 1 : (sortDirection ? -1 : 1) * -1
+                    return parseFloat(a[sortedColumn]) > parseFloat(b[sortedColumn]) ? (sortDirection === "true" ? -1 : 1) * 1 : (sortDirection === "true" ? -1 : 1) * -1
                 }
                 if (isNaN(parseFloat(a[sortedColumn])) === false && isNaN(parseFloat(b[sortedColumn])) === false)
                     return parseFloat(a[sortedColumn]) > parseFloat(b[sortedColumn])
-                        ? (sortDirection ? -1 : 1) * 1
-                        : (sortDirection ? -1 : 1) * -1
+                        ? (sortDirection === "true" ? -1 : 1) * 1
+                        : (sortDirection === "true" ? -1 : 1) * -1
                 else if (isNaN(parseFloat(a[sortedColumn])) && isNaN(parseFloat(b[sortedColumn])) === false)
-                    return sortDirection ? 1 : -1
+                    return sortDirection === "true" ? 1 : -1
                 else if (isNaN(parseFloat(a[sortedColumn])) === false && isNaN(parseFloat(b[sortedColumn])))
-                    return sortDirection ? -1 : 1
+                    return sortDirection === "true" ? -1 : 1
                 else
                     return 0
             })
@@ -397,7 +397,13 @@ async function setMarketcap(_tokens) {
     return tmpTokens;
 }
 module.exports.getHbarPrice = async () => {
-    const hbarPrices = await utils.getHbarPrices()
+    const t = await Token.find({id: "0.0.1456986"})
+    if (t && t.length > 0) {
+        return {
+            success: true,
+            data: t[0]['priceUsd']
+        }
+    }
     if (hbarPrices.length > 0) {
         return {
             success: true,
