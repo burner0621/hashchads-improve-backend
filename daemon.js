@@ -39,31 +39,34 @@ const sleep = (delay) => {
 }
 
 const saveTokens = async () => {
-    const proxyNum = Math.floor(Math.random() * dProxyList.length);
-    const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
-    try {
-        let response = await fetch(`${config.apiURL}/tokens`, { agent: proxy })
-        if (response.status === 200) {
-            const jsonData = await response.json();
-            tokens = jsonData
-            console.log("================== Save Tokens Start ==================", jsonData.length)
-            for (t of jsonData) {
-                const _t = await Token.findOne({ id: t['id'] });
-                if (_t) {
-                    await Token.findOneAndUpdate(
-                        { id: t['id'] },
-                        t
-                    )
-                    continue
+    while (1) {
+        const proxyNum = Math.floor(Math.random() * dProxyList.length);
+        const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
+        try {
+            let response = await fetch(`${config.apiURL}/tokens`, { agent: proxy })
+            if (response.status === 200) {
+                const jsonData = await response.json();
+                tokens = jsonData
+                console.log("================== Save Tokens Start ==================", jsonData.length)
+                for (t of jsonData) {
+                    const _t = await Token.findOne({ id: t['id'] });
+                    if (_t) {
+                        await Token.findOneAndUpdate(
+                            { id: t['id'] },
+                            t
+                        )
+                        continue
+                    }
+                    _newToken = new Token(t);
+                    await _newToken.save()
                 }
-                _newToken = new Token(t);
-                await _newToken.save()
             }
+        } catch (e) {
+            console.log(e)
         }
-    } catch (e) {
-        console.log(e)
+        sleep (TOKEN_INTERVAL)
+        console.log("++++++++++++++++++++ Save Tokens End ++++++++++++++++++++")
     }
-    console.log("++++++++++++++++++++ Save Tokens End ++++++++++++++++++++")
 }
 
 const savePools = async () => {
@@ -124,7 +127,7 @@ const savePriceChanges = async () => {
         } catch (e) {
             console.log(e)
         }
-        sleep (3)
+        sleep(3)
         console.log("++++++++++++++++++++ Save PriceChange End ++++++++++++++++++++")
     }
 }
@@ -304,17 +307,18 @@ const saveToeknLatestPrices = async () => {
 async function main() {
     dbConnect()
     dProxyList = await utils.readCSVData("proxylist/" + config.proxyListFile)
+    saveTokens()
     saveMonthlyPriceData()
     saveToeknLatestPrices()
     saveMarketCapData()
-    savePriceChanges ()
+    savePriceChanges()
     mainSaveData()
 }
 
 async function mainSaveData() {
     let period = 0
     while (1) {
-        if (period % TOKEN_INTERVAL === 0) await saveTokens()
+        // if (period % TOKEN_INTERVAL === 0) await saveTokens()
         if (period % POOL_INTERVAL === 0) await savePools()
         if (period % DAILY_VOLUME_INTERVAL === 0) await saveDailyVolumes()
         // if (period % POOL_INTERVAL === 0) await saveMarketCapData()
