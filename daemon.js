@@ -95,35 +95,38 @@ const savePools = async () => {
 }
 
 const savePriceChanges = async () => {
-    const proxyNum = Math.floor(Math.random() * dProxyList.length);
-    const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
-    try {
-        let response = await fetch(`${config.apiURL}/tokens/price-change`, { agent: proxy })
-        if (response.status === 200) {
-            const jsonData = await response.json();
-            console.log("================== Save PriceChange Start ==================", Object.keys(jsonData).length)
-            for (key of Object.keys(jsonData)) {
-                const _t = await Token.findOne({ id: key });
-                if (_t) {
-                    await Token.findOneAndUpdate(
-                        { id: key },
-                        {
-                            dailyPriceChange: jsonData[key],
-                        }
-                    );
-                } else {
-                    _newToken = new Token({
-                        id: key,
-                        dailyPriceChange: jsonData[key]
-                    });
-                    await _newToken.save()
+    while (1) {
+        const proxyNum = Math.floor(Math.random() * dProxyList.length);
+        const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
+        try {
+            let response = await fetch(`${config.apiURL}/tokens/price-change`, { agent: proxy })
+            if (response.status === 200) {
+                const jsonData = await response.json();
+                console.log("================== Save PriceChange Start ==================", Object.keys(jsonData).length)
+                for (key of Object.keys(jsonData)) {
+                    const _t = await Token.findOne({ id: key });
+                    if (_t) {
+                        await Token.findOneAndUpdate(
+                            { id: key },
+                            {
+                                dailyPriceChange: jsonData[key],
+                            }
+                        );
+                    } else {
+                        _newToken = new Token({
+                            id: key,
+                            dailyPriceChange: jsonData[key]
+                        });
+                        await _newToken.save()
+                    }
                 }
             }
+        } catch (e) {
+            console.log(e)
         }
-    } catch (e) {
-        console.log(e)
+        sleep (3)
+        console.log("++++++++++++++++++++ Save PriceChange End ++++++++++++++++++++")
     }
-    console.log("++++++++++++++++++++ Save PriceChange End ++++++++++++++++++++")
 }
 
 const saveDailyVolumes = async () => {
@@ -304,6 +307,7 @@ async function main() {
     saveMonthlyPriceData()
     saveToeknLatestPrices()
     saveMarketCapData()
+    savePriceChanges ()
     mainSaveData()
 }
 
@@ -314,7 +318,7 @@ async function mainSaveData() {
         if (period % POOL_INTERVAL === 0) await savePools()
         if (period % DAILY_VOLUME_INTERVAL === 0) await saveDailyVolumes()
         // if (period % POOL_INTERVAL === 0) await saveMarketCapData()
-        await savePriceChanges()
+        // await savePriceChanges()
         await saveLiquidity()
         sleep(PRICE_INTERVAL)
         period += PRICE_INTERVAL
