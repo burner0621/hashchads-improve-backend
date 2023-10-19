@@ -33,10 +33,15 @@ const dbConnect = () => {
         });
 }
 
+// const sleep = (delay) => {
+//     var start = new Date().getTime() / 1000;
+//     while (new Date().getTime() / 1000 < start + delay);
+// }
+// created by Kaiburns 
 const sleep = (delay) => {
-    var start = new Date().getTime() / 1000;
-    while (new Date().getTime() / 1000 < start + delay);
-}
+    return new Promise((resolve) => setTimeout(resolve, delay * 1000));
+  };
+
 
 const saveTokens = async () => {
     while (1) {
@@ -64,7 +69,8 @@ const saveTokens = async () => {
         } catch (e) {
             console.log(e)
         }
-        sleep (TOKEN_INTERVAL)
+        // sleep (TOKEN_INTERVAL)
+        await sleep (TOKEN_INTERVAL)
         console.log("++++++++++++++++++++ Save Tokens End ++++++++++++++++++++")
     }
 }
@@ -277,7 +283,7 @@ const saveMarketCapData = async () => {
 }
 
 
-const saveToeknLatestPrices = async () => {
+const saveTokenLatestPrices = async () => {
     while (1) {
         let tmpTokens = await Token.find({})
         for (let item of tmpTokens) {
@@ -285,7 +291,7 @@ const saveToeknLatestPrices = async () => {
             const proxy = new ProxyAgent(`${dProxyList[proxyNum][2].toLowerCase()}://${dProxyList[proxyNum][0]}:${dProxyList[proxyNum][1]}`);
             try {
                 let response = await fetch(`${config.apiURL}/tokens/prices/latest/${item.id}?interval=DAY`, { agent: proxy });
-                console.log("saveToeknLatestPrices >>> ", item['id'], " ... status = ", response.status)
+                console.log("saveTokenLatestPrices >>> ", item['id'], " ... status = ", response.status)
                 if (response.status === 200) {
                     let jsonData = await response.json()
                     await Token.findOneAndUpdate(
@@ -309,7 +315,7 @@ async function main() {
     dProxyList = await utils.readCSVData("proxylist/" + config.proxyListFile)
     saveTokens()
     saveMonthlyPriceData()
-    saveToeknLatestPrices()
+    saveTokenLatestPrices()
     saveMarketCapData()
     savePriceChanges()
     mainSaveData()
