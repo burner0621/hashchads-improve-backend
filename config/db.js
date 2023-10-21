@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const dbConfig = require('./config');
 
 const db = {};
+/// by KCB
+mongoose.set('strictQuery', true);
+///
 db.mongoose = mongoose;
 db.url = dbConfig.url;
 
